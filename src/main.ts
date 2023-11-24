@@ -2,4 +2,10 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import "@/assets/scss/main.scss";
 
-createApp(App).mount("#app");
+import { WebSocketService } from "./services/WebSocketService";
+
+const app = createApp(App);
+
+app.provide("$webSocketService", new WebSocketService());
+
+app.mount("#app");
