@@ -22,7 +22,7 @@
 import { computed, defineComponent, toRefs } from "vue";
 
 import { LogItem } from "@/shared/repo";
-import { HighlightService } from "@/services/HighlightService";
+import { HighlightService } from "@/services";
 
 export default defineComponent({
   name: "SharedArrows",
@@ -49,7 +49,8 @@ export default defineComponent({
 
     const isDisabledNext = computed(() => {
       return (
-        !search.value || displayedHighlightIndex.value >= highlightMatches.value
+        !search.value ||
+        displayedHighlightIndex.value >= highlightMatches.value - 1
       );
     });
 

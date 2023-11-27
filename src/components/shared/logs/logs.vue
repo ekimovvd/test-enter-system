@@ -1,41 +1,63 @@
 <template>
   <div class="shared-logs">
-    <div class="shared-logs__log" v-for="(log, logIndex) in logs" :key="log">
-      <h4
-        v-html="highlightText(log.Level, logIndex)"
-        class="shared-logs__log-level"
-        :class="onDisplayedLogLevelClass(log.Level)"
-      ></h4>
+    <div class="shared-logs__log" v-for="log in logs" :key="log.Id">
+      <h4 class="shared-logs__log-level">
+        <span v-for="part in log.Level" :key="part.id">
+          <SharedHighlight v-if="part.isHighlight">
+            {{ part.text }}
+          </SharedHighlight>
 
-      <p
-        class="shared-logs__log-message"
-        v-html="highlightText(log.Message, logIndex)"
-      ></p>
+          <span v-else>{{ part.text }}</span>
+        </span>
+      </h4>
+
+      <p class="shared-logs__log-message">
+        <span v-for="part in log.Message" :key="part.id">
+          <SharedHighlight v-if="part.isHighlight">
+            {{ part.text }}
+          </SharedHighlight>
+
+          <span v-else>{{ part.text }}</span>
+        </span>
+      </p>
 
       <div class="shared-logs__log-footer">
-        <p
-          v-if="log.Source"
-          class="shared-logs__log-label shared-logs__log-label--source"
-          v-html="highlightText(log.Source, logIndex)"
-        ></p>
+        <p class="shared-logs__log-label shared-logs__log-label--source">
+          <span v-for="part in log.Source" :key="part.id">
+            <SharedHighlight v-if="part.isHighlight">
+              {{ part.text }}
+            </SharedHighlight>
 
-        <span
-          class="shared-logs__log-label shared-logs__log-label--timestamp"
-          v-html="highlightText(log.Timestamp, logIndex)"
-        ></span>
+            <span v-else>{{ part.text }}</span>
+          </span>
+        </p>
+
+        <p class="shared-logs__log-label shared-logs__log-label--timestamp">
+          <span v-for="part in log.Timestamp" :key="part.id">
+            <SharedHighlight v-if="part.isHighlight">
+              {{ part.text }}
+            </SharedHighlight>
+
+            <span v-else>{{ part.text }}</span>
+          </span>
+        </p>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, toRefs } from "vue";
+import { defineComponent } from "vue";
+
+import SharedHighlight from "@/components/shared/highlight/highlight.vue";
 
 import { LogItem } from "@/shared/repo";
-import { HighlightService } from "@/services/HighlightService";
 
 export default defineComponent({
   name: "SharedLogs",
+  components: {
+    SharedHighlight,
+  },
   props: {
     logs: {
       type: Array as () => LogItem[],
@@ -45,31 +67,6 @@ export default defineComponent({
       type: String,
       default: "",
     },
-    highlightService: {
-      type: Object as () => HighlightService,
-      required: true,
-    },
-  },
-  setup(props) {
-    const { search, highlightService } = toRefs(props);
-
-    const onDisplayedLogLevelClass = (level: string) => {
-      return `shared-logs__log-level--${level.toLowerCase()}`;
-    };
-
-    const highlightText = (text: string, index: number) => {
-      return highlightService.value.getHighlightText(
-        text,
-        index,
-        search.value,
-        "shared-logs__log-highlight"
-      );
-    };
-
-    return {
-      onDisplayedLogLevelClass,
-      highlightText,
-    };
   },
 });
 </script>
@@ -94,26 +91,6 @@ export default defineComponent({
     font-size: 14px;
     line-height: 18px;
     margin-bottom: 8px;
-
-    &--warn {
-      color: #6e6e6e;
-    }
-
-    &--error {
-      color: #ba403c;
-    }
-
-    &--debug {
-      color: #3465be;
-    }
-
-    &--info {
-      color: #258052;
-    }
-
-    &--trace {
-      color: #b88623;
-    }
   }
 
   &__log-message {
@@ -145,11 +122,6 @@ export default defineComponent({
       color: #258052;
       background: #d8e9e1;
     }
-  }
-
-  &__log-highlight {
-    color: #ba403c;
-    background: #f3dbd8;
   }
 }
 </style>

@@ -32,7 +32,7 @@ export class LevelsService {
     }, DEFAULT_DEBOUNCE)
   );
 
-  public get(): string[] {
+  public getLevels(): string[] {
     return this.state.levels;
   }
 }

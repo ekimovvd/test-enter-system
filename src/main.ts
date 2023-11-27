@@ -2,7 +2,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import "@/assets/scss/main.scss";
 
-import { WebSocketService } from "./services/WebSocketService";
+import { WebSocketService } from "@/services";
 
 const app = createApp(App);
 

@@ -29,10 +29,15 @@ export class WebSocketService {
 
     this.socket.onclose = () => {
       this.socket = null;
+      this.counter = 0;
 
       if (this.callbackReconnect) {
         this.callbackReconnect();
       }
+    };
+
+    this.socket.onerror = (event) => {
+      console.log("Error: ", event);
     };
 
     this.socket.onmessage = (event) => {
@@ -40,16 +45,6 @@ export class WebSocketService {
         this.callbackMessage(event);
       }
     };
-  }
-
-  public login(callId: string): void {
-    this.send([
-      MessageType.Call,
-      callId,
-      urlGenerator().login(),
-      process.env.VUE_APP_USERNAME,
-      process.env.VUE_APP_PASSWORD,
-    ]);
   }
 
   public logs(): void {
@@ -68,7 +63,7 @@ export class WebSocketService {
     this.counter++;
   }
 
-  private send(
+  public send(
     payload: [MessageType, string | number, string?, string?, string?]
   ): void {
     if (this.socket) {

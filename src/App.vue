@@ -28,6 +28,7 @@
       />
 
       <SharedScrollWrapper
+        :is-load-more="isLoadMore"
         :total-count="displayedTotalCount"
         @load-more="loadMore"
       >
@@ -50,12 +51,15 @@ import SharedLogs from "@/components/shared/logs/logs.vue";
 import SharedArrows from "@/components/shared/arrows/arrows.vue";
 import SharedScrollWrapper from "@/components/shared/scroll-wrapper/scroll-wrapper.vue";
 
-import { WebSocketService } from "@/services/WebSocketService";
-import { LogsService } from "@/services/LogsService";
-import { LevelsService } from "@/services/LevelsService";
-import { HighlightService } from "@/services/HighlightService";
-
-import { MessageType } from "@/shared/constants";
+import {
+  WebSocketService,
+  LogsService,
+  LevelsService,
+  HighlightService,
+  MessageParserService,
+  CallIdService,
+  AuthService,
+} from "@/services";
 
 export default defineComponent({
   name: "App",
@@ -68,9 +72,20 @@ export default defineComponent({
   },
   setup() {
     const webSocketService = inject("$webSocketService") as WebSocketService;
-    const logsService = reactive(new LogsService());
+
+    const logsService = new LogsService();
+    const callIdService = new CallIdService();
+    const authService = new AuthService(webSocketService, callIdService);
+
     const levelsService = reactive(new LevelsService());
     const highlightService = reactive(new HighlightService());
+
+    const messageParserService = new MessageParserService(
+      webSocketService,
+      logsService,
+      callIdService,
+      authService
+    );
 
     onUnmounted(() => {
       if (webSocketService) {
@@ -78,52 +93,37 @@ export default defineComponent({
       }
     });
 
-    const onMessage = (event: MessageEvent) => {
-      const [messageType, callId, result] = JSON.parse(event.data);
-
-      switch (messageType) {
-        case MessageType.Welcome:
-          webSocketService.login(callId);
-
-          break;
-        case MessageType.CallResult:
-          webSocketService.logs();
-
-          break;
-        case MessageType.Event:
-          logsService.addLogs(result);
-
-          break;
-        default:
-          break;
-      }
-    };
-
     const onReconnect = () => {
-      webSocketService.connect(onMessage, onReconnect);
+      webSocketService.connect(messageParserService.parseMessage, onReconnect);
     };
 
-    webSocketService.connect(onMessage, onReconnect);
+    webSocketService.connect(messageParserService.parseMessage, onReconnect);
 
     const displayedLogs = computed(() => {
-      return logsService.getFilteredLogs(displayedLevels.value);
+      return logsService.getLogs(
+        displayedLevels.value,
+        highlightService.getIndex()
+      );
     });
 
     const displayedLevels = computed(() => {
-      return levelsService.get();
-    });
-
-    const displayedTotalCount = computed(() => {
-      return logsService.getLogs();
+      return levelsService.getLevels();
     });
 
     const displayedSearch = computed(() => {
       return logsService.getSearch();
     });
 
+    const displayedTotalCount = computed(() => {
+      return logsService.getTotalCountLogs();
+    });
+
+    const isLoadMore = computed(() => {
+      return logsService.isLoadMore();
+    });
+
     const changeSearch = (search: string) => {
       logsService.changeSearch(search);
-      logsService.setPage(0);
 
       highlightService.setIndex(0);
     };
@@ -144,8 +144,9 @@ export default defineComponent({
       highlightService,
       displayedLevels,
       displayedLogs,
-      displayedTotalCount,
       displayedSearch,
+      displayedTotalCount,
+      isLoadMore,
       changeSearch,
       selectLevel,
       trashLevel,

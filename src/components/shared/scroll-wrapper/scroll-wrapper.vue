@@ -14,14 +14,13 @@ import { createIntersectionObserver } from "@/utils/scroll";
 const INITIAL_LIMIT = 10;
 const INITIAL_OFFSET = 0;
 
-interface PaginationOption {
-  limit: number;
-  offset: number;
-}
-
 export default defineComponent({
   name: "SharedScrollWrapper",
   props: {
+    isLoadMore: {
+      type: Boolean,
+      default: false,
+    },
     totalCount: {
       type: Number,
       default: 0,
@@ -29,7 +28,7 @@ export default defineComponent({
   },
   emits: ["load-more"],
   setup(props, { emit }) {
-    const { totalCount } = toRefs(props);
+    const { isLoadMore, totalCount } = toRefs(props);
 
     const scrollWrapper = ref<HTMLElement | null>(null);
     const sentinelElement = ref<HTMLElement | null>(null);
@@ -45,21 +44,19 @@ export default defineComponent({
     const observer = createIntersectionObserver(([entry]) => {
       if (!entry.isIntersecting) return;
 
-      if (totalCount.value) {
+      if (isLoadMore.value) {
         const remainingItems = totalCount.value - offset;
 
         if (remainingItems <= 0 || totalCount.value <= INITIAL_LIMIT) return;
 
         offset += Math.min(INITIAL_LIMIT, remainingItems);
 
-        loadMore({ limit: INITIAL_LIMIT, offset });
+        loadMore();
 
         return;
       }
 
       offset += INITIAL_LIMIT;
-
-      loadMore({ limit: INITIAL_LIMIT, offset });
     }, observerOptions);
 
     onMounted(() => {
@@ -72,8 +69,8 @@ export default defineComponent({
       observer?.disconnect();
     });
 
-    const loadMore = (params: PaginationOption) => {
-      emit("load-more", params);
+    const loadMore = () => {
+      emit("load-more");
     };
 
     return {
